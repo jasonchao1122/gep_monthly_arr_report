@@ -334,6 +334,13 @@
     <div style="margin-top:10px;font-size:11px;color:#94a3b8;">* Partners with $0 ARR in both periods omitted. Chase/Lattice/US Bank/BQE grouped as minimum-floor partners (flat MoM). Xero excluded — revenue recognition error corrected to $0. Partner values in $K; totals in $K for comparability.</div>
   </div>
 
+  <!-- PARTNER ARR LEADERBOARD -->
+  <div class="card-full">
+    <div class="section-title">Partner ARR Leaderboard — February 2026 (Ranked by ARR)</div>
+    <div style="margin-bottom:12px;font-size:11px;color:#64748b;">Bar width proportional to ARR · YoY growth rate shown on right · Partners with no prior-year baseline marked as New</div>
+    <div id="leaderboard"></div>
+  </div>
+
   <!-- DRIVER CATEGORY CHART (full width, horizontal bar — handles negatives cleanly) -->
   <div class="card-full">
     <div class="section-title">MoM ARR Bridge by Driver Category (+$141K total)</div>
@@ -640,6 +647,77 @@ new Chart(document.getElementById('arrTrendChart').getContext('2d'), {
     }
   }
 });
+
+// ========= PARTNER ARR LEADERBOARD =========
+(function() {
+  const partners = [
+    { name: 'Chase / Lattice / US Bank / BQE', arr: 862, yoy: '>1,000%', yoyVal: 99, driver: 'Min Floor', driverClass: 'badge-gray' },
+    { name: 'GoCo',                             arr: 754, yoy: '+153.5%', yoyVal: 153.5, driver: 'Seasonal',  driverClass: 'badge-orange' },
+    { name: 'Collective',                       arr: 704, yoy: '+24.8%',  yoyVal: 24.8,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Vagaro',                           arr: 592, yoy: '+66.7%',  yoyVal: 66.7,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Freshbooks',                       arr: 332, yoy: '+86.7%',  yoyVal: 86.7,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'HR for Health',                    arr: 281, yoy: '+2,724%', yoyVal: 99,    driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Heard',                            arr: 255, yoy: '+85.4%',  yoyVal: 85.4,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Formations',                       arr: 239, yoy: '+10.6%',  yoyVal: 10.6,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Lettuce',                          arr: 200, yoy: '+67.1%',  yoyVal: 67.1,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Remote',                           arr: 130, yoy: '+46.7%',  yoyVal: 46.7,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Groundcloud',                      arr: 91,  yoy: '-18.6%',  yoyVal: -18.6, driver: 'Declining', driverClass: 'badge-red' },
+    { name: 'HiBob',                            arr: 90,  yoy: 'New',     yoyVal: null,  driver: 'Min Ramp',  driverClass: 'badge-purple' },
+    { name: 'busybusy / CustomBooks / Thryv',   arr: 87,  yoy: '+62.5%',  yoyVal: 62.5,  driver: 'Organic',   driverClass: 'badge-green' },
+    { name: 'Studio Designer',                  arr: 28,  yoy: 'New',     yoyVal: null,  driver: 'Organic',   driverClass: 'badge-green' },
+  ];
+  const max = partners[0].arr;
+  const container = document.getElementById('leaderboard');
+  partners.forEach((p, i) => {
+    const pct = (p.arr / max * 100).toFixed(1);
+    const isNeg = p.yoyVal !== null && p.yoyVal < 0;
+    const isNew = p.yoy === 'New';
+    const yoyColor = isNew ? '#94a3b8' : isNeg ? '#dc2626' : '#16a34a';
+    const yoyWeight = isNew ? '400' : '700';
+    const barColor = isNeg ? '#ef4444' : p.driverClass === 'badge-purple' ? '#a855f7' : p.driverClass === 'badge-gray' ? '#94a3b8' : p.driverClass === 'badge-orange' ? '#fb923c' : '#22c55e';
+    container.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="width:22px;text-align:right;font-size:11px;font-weight:700;color:#94a3b8;flex-shrink:0;">${i+1}</div>
+        <div style="width:210px;font-size:12px;font-weight:${i<3?'700':'500'};color:#1e293b;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div style="flex:1;background:#f1f5f9;border-radius:4px;height:18px;overflow:hidden;">
+          <div style="width:${pct}%;background:${barColor};height:100%;border-radius:4px;transition:width 0.3s;"></div>
+        </div>
+        <div style="width:58px;text-align:right;font-size:12px;font-weight:700;color:#1e293b;flex-shrink:0;">$${p.arr}K</div>
+        <div style="width:72px;text-align:right;font-size:12px;font-weight:${yoyWeight};color:${yoyColor};flex-shrink:0;">${p.yoy}</div>
+        <div style="width:70px;flex-shrink:0;text-align:right;"><span class="badge ${p.driverClass}">${p.driver}</span></div>
+      </div>`);
+  });
+  // YoY growth ranking
+  const byYoY = [...partners].filter(p => p.yoyVal !== null && p.yoy !== 'New').sort((a,b) => {
+    const av = a.yoy === '>1,000%' ? 99999 : a.yoyVal;
+    const bv = b.yoy === '>1,000%' ? 99999 : b.yoyVal;
+    return bv - av;
+  });
+  // append YoY leaderboard
+  const yoySection = document.createElement('div');
+  yoySection.style.cssText = 'margin-top:28px;';
+  yoySection.innerHTML = `<div class="section-title" style="margin-bottom:10px;">YoY Growth Rate Ranking — Feb 2025 → Feb 2026</div>
+    <div style="margin-bottom:10px;font-size:11px;color:#64748b;">Partners without Feb 2025 baseline (HiBob, Studio Designer) excluded · Chase/Lattice/US Bank/BQE shown as >1,000%</div>`;
+  const maxYoY = 2724;
+  byYoY.forEach((p, i) => {
+    const rawVal = p.yoy === '>1,000%' ? 99999 : Math.abs(p.yoyVal);
+    const pct = Math.min((rawVal / maxYoY * 100), 100).toFixed(1);
+    const isNeg = p.yoyVal < 0;
+    const barColor = isNeg ? '#ef4444' : '#3b82f6';
+    const textColor = isNeg ? '#dc2626' : '#16a34a';
+    yoySection.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="width:22px;text-align:right;font-size:11px;font-weight:700;color:#94a3b8;flex-shrink:0;">${i+1}</div>
+        <div style="width:210px;font-size:12px;font-weight:${i<3?'700':'500'};color:#1e293b;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div style="flex:1;background:#f1f5f9;border-radius:4px;height:18px;overflow:hidden;">
+          <div style="width:${pct}%;background:${barColor};height:100%;border-radius:4px;"></div>
+        </div>
+        <div style="width:80px;text-align:right;font-size:12px;font-weight:700;color:${textColor};flex-shrink:0;">${p.yoy}</div>
+        <div style="width:70px;flex-shrink:0;text-align:right;"><span class="badge ${p.driverClass}">${p.driver}</span></div>
+      </div>`);
+  });
+  container.parentElement.appendChild(yoySection);
+})();
 </script>
 </body>
 </html>
