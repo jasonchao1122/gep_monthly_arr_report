@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEP February 2026 ARR Performance Update</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+  .page { max-width: 1140px; margin: 0 auto; padding: 32px 24px; }
+
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); color: white; padding: 36px 40px; border-radius: 16px; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; right: -60px; top: -60px; width: 250px; height: 250px; background: rgba(255,255,255,0.04); border-radius: 50%; }
+  .header-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+  .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .header-sub { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 24px; }
+  .header-kpis { display: flex; gap: 40px; flex-wrap: wrap; }
+  .kpi-label { font-size: 10px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .kpi-value { font-size: 24px; font-weight: 700; }
+  .kpi-delta { font-size: 12px; margin-top: 2px; }
+  .delta-up { color: #4ade80; }
+  .delta-flat { color: rgba(255,255,255,0.45); }
+
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .card { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .card-full { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 18px; }
+
+  .metric-card { background: white; border-radius: 12px; padding: 18px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); border-left: 4px solid #e2e8f0; }
+  .metric-card.green { border-left-color: #22c55e; }
+  .metric-card.blue { border-left-color: #3b82f6; }
+  .metric-card.purple { border-left-color: #a855f7; }
+  .mc-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .mc-value { font-size: 21px; font-weight: 700; color: #1e293b; }
+  .mc-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
+  .mc-change { font-size: 12px; font-weight: 600; margin-top: 5px; }
+  .mc-change.up { color: #16a34a; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: #f8fafc; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+  tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  .right { text-align: right; }
+  .center { text-align: center; }
+  .bold { font-weight: 600; }
+  .green-text { color: #16a34a; font-weight: 600; }
+  .red-text { color: #dc2626; font-weight: 600; }
+  .gray-text { color: #94a3b8; }
+  .total-row td { background: #f1f5f9; font-weight: 700; border-top: 2px solid #cbd5e1; }
+  .yoy-sub { display: block; font-size: 10px; font-weight: 600; margin-top: 2px; color: #64748b; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-orange { background: #ffedd5; color: #c2410c; }
+  .badge-purple { background: #f3e8ff; color: #7e22ce; }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+
+  .narrative { background: #f8fafc; border-radius: 10px; padding: 18px 22px; border-left: 4px solid #3b82f6; margin-bottom: 18px; font-size: 13.5px; line-height: 1.7; color: #334155; }
+
+  .alert { border-radius: 8px; padding: 12px 16px; font-size: 12.5px; line-height: 1.65; margin-bottom: 10px; }
+  .alert:last-child { margin-bottom: 0; }
+  .alert-green { background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d; }
+  .alert-purple { background: #faf5ff; border: 1px solid #d8b4fe; color: #581c87; }
+  .alert-yellow { background: #fefce8; border: 1px solid #fef08a; color: #713f12; }
+  .alert-slate { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; }
+
+  .chart-wrap { position: relative; height: 280px; }
+  .chart-wrap-sm { position: relative; height: 240px; }
+  .chart-wrap-tall { position: relative; height: 300px; }
+  .chart-wrap-xl { position: relative; height: 320px; }
+
+  .footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 28px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
+  .chart-note { font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-label">GEP Operating Model · Monthly Performance Update</div>
+    <h1>February 2026 ARR — Month-over-Month Analysis</h1>
+    <div class="header-sub">Q4 FY26 Actuals &nbsp;·&nbsp; Compared to January 2026 &nbsp;·&nbsp; YoY vs. February 2025</div>
+    <div class="header-kpis">
+      <div>
+        <div class="kpi-label">Feb ARR</div>
+        <div class="kpi-value">$4.69M</div>
+        <div class="kpi-delta delta-up">▲ +$0.14M vs Jan (+3.1%)</div>
+      </div>
+      <div>
+        <div class="kpi-label">YoY Growth</div>
+        <div class="kpi-value">+111.8%</div>
+        <div class="kpi-delta delta-flat">vs. Feb 2025: $2.21M</div>
+      </div>
+      <div>
+        <div class="kpi-label">Total ERs</div>
+        <div class="kpi-value">12,411</div>
+        <div class="kpi-delta delta-up">▲ +393 net MoM · +6,837 YoY</div>
+      </div>
+      <div>
+        <div class="kpi-label">Avg ACV / ER</div>
+        <div class="kpi-value">$378</div>
+        <div class="kpi-delta delta-flat">Flat vs. Jan · favorable mix shift</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY NARRATIVE -->
+  <div class="narrative">
+    <strong>Summary:</strong> February ARR grew +$0.14M (+3.1%) to $4.69M, driven by strong organic ER growth at high-ACV partners and a contractual minimum step-up at HiBob. ER adds normalized from January's payroll-switching peak (639 vs. 971) but churn improved to 185 — net ER growth of +393 keeps the base on a healthy trajectory. YoY, the portfolio is up +112% from $2.21M in February 2025, reflecting both new partner ramps (Chase, Lattice, BQE, US Bank, HR for Health, HiBob) and strong organic growth across existing partners.
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="grid-3" style="margin-bottom:18px;">
+    <div class="metric-card green">
+      <div class="mc-label">ARR MoM Change</div>
+      <div class="mc-value">+$0.14M</div>
+      <div class="mc-change up">▲ +3.1% · Jan: $4.54M → Feb: $4.69M</div>
+    </div>
+    <div class="metric-card blue">
+      <div class="mc-label">Net ER Adds (MoM)</div>
+      <div class="mc-value">+393</div>
+      <div class="mc-change up">639 adds · 185 churn · churn rate 1.5% (Jan: 2.0%)</div>
+    </div>
+    <div class="metric-card purple">
+      <div class="mc-label">ARR YoY (Feb '25 → '26)</div>
+      <div class="mc-value">+$2.47M</div>
+      <div class="mc-change up">▲ +111.8% — new partner ramps + organic growth</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW: Contributor Bar + ER Activity -->
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="section-title">ARR Contributors — Net New +$141K (Jan → Feb 2026)</div>
+      <div class="chart-wrap-tall"><canvas id="contributorChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">ER Activity — Adds vs. Churn (Nov 2025 – Feb 2026)</div>
+      <div class="chart-wrap-tall"><canvas id="erActivityChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PARTNER ARR TABLE -->
+  <div class="card-full">
+    <div class="section-title">Partner ARR Detail — MoM and YoY Comparison</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Partner</th>
+          <th class="right">Feb 2025</th>
+          <th class="right">Jan 2026</th>
+          <th class="right">Feb 2026</th>
+          <th class="right">MoM Δ</th>
+          <th class="right">MoM %</th>
+          <th class="right">YoY Δ</th>
+          <th class="right">YoY %</th>
+          <th class="center">Driver</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bold">HR for Health</td>
+          <td class="right gray-text">$10K</td>
+          <td class="right">$238K</td>
+          <td class="right bold">$281K</td>
+          <td class="right green-text">+$43K</td>
+          <td class="right green-text">+18.0%</td>
+          <td class="right green-text">+$271K</td>
+          <td class="right green-text">+2,724%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td class="bold">HiBob</td>
+          <td class="right gray-text">—</td>
+          <td class="right">$60K</td>
+          <td class="right bold">$90K</td>
+          <td class="right green-text">+$30K</td>
+          <td class="right green-text">+50.0%</td>
+          <td class="right green-text">+$90K</td>
+          <td class="right gray-text">—</td>
+          <td class="center"><span class="badge badge-purple">Min Ramp</span></td>
+        </tr>
+        <tr>
+          <td class="bold">Lettuce</td>
+          <td class="right gray-text">$120K</td>
+          <td class="right">$178K</td>
+          <td class="right bold">$200K</td>
+          <td class="right green-text">+$23K</td>
+          <td class="right green-text">+12.7%</td>
+          <td class="right green-text">+$80K</td>
+          <td class="right green-text">+67.1%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td class="bold">Heard</td>
+          <td class="right gray-text">$137K</td>
+          <td class="right">$242K</td>
+          <td class="right bold">$255K</td>
+          <td class="right green-text">+$13K</td>
+          <td class="right green-text">+5.4%</td>
+          <td class="right green-text">+$117K</td>
+          <td class="right green-text">+85.4%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td class="bold">Vagaro</td>
+          <td class="right gray-text">$355K</td>
+          <td class="right">$580K</td>
+          <td class="right bold">$592K</td>
+          <td class="right green-text">+$12K</td>
+          <td class="right green-text">+2.1%</td>
+          <td class="right green-text">+$237K</td>
+          <td class="right green-text">+66.7%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td class="bold">Freshbooks</td>
+          <td class="right gray-text">$178K</td>
+          <td class="right">$321K</td>
+          <td class="right bold">$332K</td>
+          <td class="right green-text">+$11K</td>
+          <td class="right green-text">+3.5%</td>
+          <td class="right green-text">+$154K</td>
+          <td class="right green-text">+86.7%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td>Formations</td>
+          <td class="right gray-text">$216K</td>
+          <td class="right">$234K</td>
+          <td class="right">$239K</td>
+          <td class="right green-text">+$5K</td>
+          <td class="right green-text">+2.3%</td>
+          <td class="right green-text">+$23K</td>
+          <td class="right green-text">+10.6%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td>Collective</td>
+          <td class="right gray-text">$564K</td>
+          <td class="right">$700K</td>
+          <td class="right">$704K</td>
+          <td class="right green-text">+$4K</td>
+          <td class="right green-text">+0.6%</td>
+          <td class="right green-text">+$140K</td>
+          <td class="right green-text">+24.8%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td>Remote</td>
+          <td class="right gray-text">$88K</td>
+          <td class="right">$127K</td>
+          <td class="right">$130K</td>
+          <td class="right green-text">+$3K</td>
+          <td class="right green-text">+2.0%</td>
+          <td class="right green-text">+$41K</td>
+          <td class="right green-text">+46.7%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td>Studio Designer</td>
+          <td class="right gray-text">—</td>
+          <td class="right">$26K</td>
+          <td class="right">$28K</td>
+          <td class="right green-text">+$2K</td>
+          <td class="right green-text">+9.2%</td>
+          <td class="right green-text">+$28K</td>
+          <td class="right gray-text">—</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td>busybusy / CustomBooks / Thryv</td>
+          <td class="right gray-text">$53K</td>
+          <td class="right">$84K</td>
+          <td class="right">$87K</td>
+          <td class="right green-text">+$3K</td>
+          <td class="right green-text">+3.7%</td>
+          <td class="right green-text">+$33K</td>
+          <td class="right green-text">+62.5%</td>
+          <td class="center"><span class="badge badge-green">Organic</span></td>
+        </tr>
+        <tr>
+          <td>GoCo</td>
+          <td class="right gray-text">$297K</td>
+          <td class="right">$754K</td>
+          <td class="right">$754K</td>
+          <td class="right gray-text">-$0K</td>
+          <td class="right gray-text">-0.1%</td>
+          <td class="right green-text">+$457K</td>
+          <td class="right green-text">+153.5%</td>
+          <td class="center"><span class="badge badge-orange">Seasonal</span></td>
+        </tr>
+        <tr>
+          <td>Chase / Lattice / US Bank / BQE</td>
+          <td class="right gray-text">$47K</td>
+          <td class="right">$862K</td>
+          <td class="right">$862K</td>
+          <td class="right gray-text">$0K</td>
+          <td class="right gray-text">—</td>
+          <td class="right green-text">+$816K</td>
+          <td class="right green-text">&gt;1,000%</td>
+          <td class="center"><span class="badge badge-gray">Min Floor</span></td>
+        </tr>
+        <tr>
+          <td>Groundcloud</td>
+          <td class="right gray-text">$112K</td>
+          <td class="right">$98K</td>
+          <td class="right">$91K</td>
+          <td class="right red-text">-$8K</td>
+          <td class="right red-text">-7.7%</td>
+          <td class="right red-text">-$21K</td>
+          <td class="right red-text">-18.6%</td>
+          <td class="center"><span class="badge badge-red">Declining</span></td>
+        </tr>
+        <tr class="total-row">
+          <td>TOTAL</td>
+          <td class="right">$2,213K</td>
+          <td class="right">$4,545K</td>
+          <td class="right">$4,686K</td>
+          <td class="right green-text">+$141K</td>
+          <td class="right green-text">+3.1%</td>
+          <td class="right green-text">+$2,473K</td>
+          <td class="right green-text">+111.8%</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:#94a3b8;">* Partners with $0 ARR in both periods omitted. Chase/Lattice/US Bank/BQE grouped as minimum-floor partners (flat MoM). Xero excluded — revenue recognition error corrected to $0. Partner values in $K; totals in $K for comparability.</div>
+  </div>
+
+  <!-- DRIVER CATEGORY CHART (full width, horizontal bar — handles negatives cleanly) -->
+  <div class="card-full">
+    <div class="section-title">MoM ARR Bridge by Driver Category (+$141K total)</div>
+    <div style="height:160px;"><canvas id="driverBarChart"></canvas></div>
+    <div class="chart-note">Organic: ER-driven revenue growth across all usage-based partners · Min Ramp: HiBob contractual minimum step-up ($5K→$7.5K/mo) · Headwinds: Groundcloud attrition (-$0.01M) + GoCo seasonal normalization (-$0.00M)</div>
+  </div>
+
+  <!-- DRIVER COMMENTARY -->
+  <div class="card-full">
+    <div class="section-title">Driver Commentary</div>
+
+    <div class="alert alert-green">
+      <strong>HR for Health — +$0.04M (+18%)</strong><br>
+      Strongest MoM contributor. Net +38 ERs (397 → 435) driven by 46 gross adds against minimal churn. At ~$600 ACV/ER, this partner generates outsized revenue per add and continues to significantly exceed its contractual minimum. YoY ARR is up 27× from $0.01M in Feb 2025 — reflecting the full ramp of a maturing, high-value partnership.
+    </div>
+
+    <div class="alert alert-purple">
+      <strong>HiBob — +$0.03M (+50%): Contractual Minimum Step-Up</strong><br>
+      The 50% jump is mechanical: the minimum fee stepped from $5,000/mo to $7,500/mo per the signed ramp schedule. No material ER growth occurred (18 ERs, flat MoM). Key PSM question: is utilization on a path to exceed the minimum before the next contractual step?
+    </div>
+
+    <div class="alert alert-green">
+      <strong>Lettuce — +$0.02M (+13%): Strongest Gross Adds Month</strong><br>
+      87 gross adds in February (net +81 ERs, 518 → 599) — best intake month on record. Lettuce is fully usage-based off its minimum floor, so every ER is incremental revenue. Worth confirming with PSM whether this reflects a new steady-state intake rate or a one-time cohort.
+    </div>
+
+    <div class="alert alert-green">
+      <strong>Heard / Vagaro / Freshbooks — Steady Organic Growth</strong><br>
+      Each added 38–44 net ERs in February. ER add rates normalized from January's elevated switching-season intake, consistent with seasonal patterns. On a YoY basis, all three are up significantly: Heard +85%, Vagaro +67%, Freshbooks +87%. The February moderation relative to January is expected, not a signal of weakness.
+    </div>
+
+    <div class="alert alert-yellow">
+      <strong>GoCo — -$0.00M (-0.1%): Seasonal Normalization, Not a Concern</strong><br>
+      February deceleration (8 ER adds vs. 70 in January) is consistent with GoCo's historical Q-start pattern — January, April, and July reliably see intake spikes as clients switch payroll providers, and subsequent months normalize sharply. February 2025 showed the same pattern (4 adds after 38 in January). YoY, GoCo is up +154% in ARR ($0.30M → $0.75M). Watch April for the next expected intake spike.
+    </div>
+
+    <div class="alert alert-slate">
+      <strong>Minimum-Floor Partners (Chase / Lattice / US Bank / BQE) — Flat at $0.86M Combined ARR</strong><br>
+      These four partners are locked at contractual minimums, contributing $0.86M in ARR. The ER base is building (combined +82 adds in February: Chase +54, US Bank +24, BQE +3, Lattice flat), but utilization has not yet reached the minimum threshold for any partner. Each represents meaningful upside when usage breaks through the floor.
+    </div>
+
+    <div class="alert alert-slate" style="border-left: 4px solid #ef4444;">
+      <strong>Groundcloud — -$0.01M (-7.7%): Continued Attrition</strong><br>
+      No new adds for a second consecutive month; residual ER churn continues eroding the base (73 ERs in Feb 2025 → 58 in Feb 2026, -21% YoY). ARR has declined from $0.11M to $0.09M YoY. This appears to be a runoff dynamic absent a specific re-engagement plan.
+    </div>
+  </div>
+
+  <!-- ER SUMMARY TABLE -->
+  <div class="card-full">
+    <div class="section-title">ER Activity Summary — 5-Month Trend</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="right">Oct 2025</th>
+          <th class="right">Nov 2025</th>
+          <th class="right">Dec 2025</th>
+          <th class="right">Jan 2026</th>
+          <th class="right">Feb 2026</th>
+          <th class="right">Feb 2025</th>
+          <th class="right">YoY Δ (ERs)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bold">Gross ER Adds</td>
+          <td class="right">—</td>
+          <td class="right">434</td>
+          <td class="right">550</td>
+          <td class="right bold">971</td>
+          <td class="right">639</td>
+          <td class="right gray-text">—</td>
+          <td class="right gray-text">—</td>
+        </tr>
+        <tr>
+          <td class="bold">Churn ERs</td>
+          <td class="right">—</td>
+          <td class="right red-text">-182</td>
+          <td class="right red-text">-131</td>
+          <td class="right red-text">-245</td>
+          <td class="right green-text">-185</td>
+          <td class="right gray-text">—</td>
+          <td class="right gray-text">—</td>
+        </tr>
+        <tr>
+          <td class="bold">Net ER Change</td>
+          <td class="right">—</td>
+          <td class="right">+252</td>
+          <td class="right">+419</td>
+          <td class="right">+726</td>
+          <td class="right">+454</td>
+          <td class="right gray-text">—</td>
+          <td class="right gray-text">—</td>
+        </tr>
+        <tr>
+          <td class="bold">Ending Total ERs</td>
+          <td class="right">—</td>
+          <td class="right">10,811</td>
+          <td class="right">11,179</td>
+          <td class="right">12,018</td>
+          <td class="right bold">12,411</td>
+          <td class="right gray-text">5,574</td>
+          <td class="right green-text">+6,837 (+123%)</td>
+        </tr>
+        <tr>
+          <td class="bold">Monthly Churn Rate</td>
+          <td class="right">—</td>
+          <td class="right">—</td>
+          <td class="right">—</td>
+          <td class="right red-text">2.0%</td>
+          <td class="right green-text">1.5%</td>
+          <td class="right gray-text">—</td>
+          <td class="right gray-text">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ARR TREND WITH YoY% OVERLAY -->
+  <div class="card-full">
+    <div class="section-title">ARR Trend — Sep 2025 to Feb 2026 (Actuals) with YoY% Growth</div>
+    <div style="height:260px;"><canvas id="arrTrendChart"></canvas></div>
+    <div class="chart-note">* YoY% elevated in Jan 2026 (113.3%) partly reflects a lower Jan 2025 base (Lettuce still on minimum floor, some partner transitions in FY25). Aug–Sep 2024 base was also depressed by 1-800Accountant churn (~$0.66M ARR), contributing to elevated YoY% across the FY26 period.</div>
+  </div>
+
+  <div class="footer">
+    GEP FY26 Operating Model · Actuals through February 2026 · Xero revenue corrected to $0 · Produced March 2026
+  </div>
+
+</div>
+
+<script>
+// ========= CONTRIBUTOR HORIZONTAL BAR CHART =========
+new Chart(document.getElementById('contributorChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: [
+      'HR for Health', 'HiBob (Min Ramp)', 'Lettuce', 'Heard', 'Vagaro',
+      'Freshbooks', 'Formations', 'Collective', 'busybusy/CB/Thryv',
+      'Remote', 'Studio Designer', 'GoCo', 'Groundcloud'
+    ],
+    datasets: [{
+      label: 'MoM ARR Δ',
+      data: [42960, 30000, 22668, 12972, 12144, 11382, 5296, 4140, 3078, 2514, 2382, -414, -7596],
+      backgroundColor: [
+        '#22c55e','#a855f7','#22c55e','#22c55e','#22c55e',
+        '#22c55e','#22c55e','#86efac','#86efac',
+        '#86efac','#86efac','#fb923c','#ef4444'
+      ],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.x;
+            const sign = v >= 0 ? '+' : '';
+            return `${sign}$${Math.abs(v).toLocaleString()} ARR`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          callback: v => {
+            const s = v >= 0 ? '+' : '-';
+            return `${s}$${(Math.abs(v)/1000).toFixed(0)}K`;
+          },
+          font: { size: 10 }
+        },
+        grid: { color: '#f1f5f9' }
+      },
+      y: { ticks: { font: { size: 10 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ========= ER ACTIVITY CHART =========
+new Chart(document.getElementById('erActivityChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026'],
+    datasets: [
+      { label: 'Gross Adds', data: [434, 550, 971, 639], backgroundColor: 'rgba(34,197,94,0.8)', borderRadius: 4 },
+      { label: 'Churn', data: [-182, -131, -245, -185], backgroundColor: 'rgba(239,68,68,0.8)', borderRadius: 4 },
+      { label: 'Net ERs Added', data: [252, 419, 726, 454], type: 'line', borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#3b82f6', tension: 0.3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
+    scales: {
+      y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+      x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ========= DRIVER HORIZONTAL BAR =========
+// Shows positives and negatives cleanly — no pie slice distortion
+new Chart(document.getElementById('driverBarChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['Organic ER Growth', 'Contractual Min Ramp', 'Headwinds'],
+    datasets: [{
+      label: 'ARR Impact',
+      data: [119418, 30000, -8010],
+      backgroundColor: ['#22c55e', '#a855f7', '#ef4444'],
+      borderRadius: 5,
+      barThickness: 36,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.x;
+            const s = v >= 0 ? '+' : '';
+            return `${s}$${Math.abs(v).toLocaleString()} (${s}${(v/141408*100).toFixed(0)}% of net)`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          callback: v => {
+            const s = v >= 0 ? '+' : '-';
+            return `${s}$${(Math.abs(v)/1000).toFixed(0)}K`;
+          },
+          font: { size: 11 }
+        },
+        grid: { color: '#f1f5f9' }
+      },
+      y: { ticks: { font: { size: 12 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ========= ARR TREND WITH YoY% DUAL AXIS =========
+new Chart(document.getElementById('arrTrendChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: ['Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026'],
+    datasets: [
+      {
+        label: 'Total ARR ($M)',
+        data: [3.30, 3.52, 3.89, 4.13, 4.54, 4.69],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#3b82f6',
+        fill: true, tension: 0.3,
+        yAxisID: 'yARR'
+      },
+      {
+        label: 'YoY Growth %',
+        data: [64.1, 61.8, 75.9, 80.2, 113.3, 111.8],
+        borderColor: '#f59e0b',
+        backgroundColor: 'transparent',
+        borderWidth: 2, borderDash: [5, 4],
+        pointRadius: 5, pointBackgroundColor: '#f59e0b',
+        tension: 0.3,
+        yAxisID: 'yYoY'
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 14 } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            if (ctx.datasetIndex === 0) return `ARR: $${ctx.parsed.y.toFixed(2)}M`;
+            return `YoY: +${ctx.parsed.y.toFixed(1)}%`;
+          }
+        }
+      }
+    },
+    scales: {
+      yARR: {
+        type: 'linear', position: 'left',
+        min: 3.0,
+        ticks: { callback: v => `$${v.toFixed(1)}M`, font: { size: 10 } },
+        grid: { color: '#f1f5f9' }
+      },
+      yYoY: {
+        type: 'linear', position: 'right',
+        min: 0, max: 140,
+        ticks: { callback: v => `+${v}%`, font: { size: 10 } },
+        grid: { drawOnChartArea: false }
+      },
+      x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+</script>
+</body>
+</html>
